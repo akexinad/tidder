@@ -1,4 +1,4 @@
-import { Connection, EntityManager, IDatabaseDriver, MikroORM } from "@mikro-orm/core";
+import { Connection, IDatabaseDriver, MikroORM } from "@mikro-orm/core";
 
 export type MyContext = {
     orm: MikroORM<IDatabaseDriver<Connection>>
