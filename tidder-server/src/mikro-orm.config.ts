@@ -21,4 +21,8 @@ export default {
  * give this object the correct type and
  * will be passable to the init() function
  * in the index.ts file.
+ * 
+ * OR you can actually infer it's type as
+ * is done above if you want to be a little
+ * more precise.
  */
