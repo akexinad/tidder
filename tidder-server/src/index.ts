@@ -9,6 +9,10 @@ import mikroOrmConfig from "./mikro-orm.config";
 const main = async () => {
     const orm = await MikroORM.init(mikroOrmConfig);
 
+    /**
+     * This automatically runs the migration for you
+     * so you don't have to do it via the cli
+     */
     await orm.getMigrator().up();
     
     const post = orm.em.create(Post, { title: "the first tidder post" });
