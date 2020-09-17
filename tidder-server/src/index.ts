@@ -6,8 +6,6 @@ import { buildSchema } from "type-graphql";
 
 import { __prod__ } from "./constants";
 
-// import { Post } from "./entities/Post";
-
 import mikroOrmConfig from "./mikro-orm.config";
 
 import { HelloResolver } from "./resolvers/hello";
