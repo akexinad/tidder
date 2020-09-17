@@ -9,7 +9,7 @@ import { Field, Int, ObjectType } from "type-graphql";
  */
 @ObjectType()
 @Entity()
-export class Post {
+export class User {
     @Field(() => Int)
     @PrimaryKey()
     id!: number;
@@ -25,6 +25,10 @@ export class Post {
     updatedAt = new Date();
 
     @Field(() => String)
+    @Property({ type: "text", unique: true })
+    username!: string;
+
+    // we remove the field property so you cannot query it.
     @Property({ type: "text" })
-    title!: string;
+    password!: string;
 }
