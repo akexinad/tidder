@@ -39,7 +39,7 @@ const main = async () => {
 
     app.use(
         session({
-            name: "juanelo turiano",
+            name: "samuelLJackson",
             store: new RedisStore({
                 client: redisClient,
                 disableTouch: true,
