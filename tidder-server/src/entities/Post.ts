@@ -2,10 +2,10 @@ import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
 import { Field, ObjectType } from "type-graphql";
 
 /**
- * the @ObjectType() tells type graphql to 
- * refer to this class as a type as well so 
- * we can use it to infer the type the resolvers
- * Query decorator
+ * the @ObjectType() tells type graphql to
+ * refer to this class as a type as well so
+ * we can use it to infer the type the 
+ * resolvers Query decorator
  */
 @ObjectType()
 @Entity()
@@ -14,8 +14,9 @@ export class Post {
     @PrimaryKey()
     id!: number;
 
-    // these decorators tell postgres that these are columns, not just fields in the class.
+    // Adding the field decortor will expose the property to graphql
     @Field(() => String)
+    // the property decorator tells postgres that these are columns, not just fields in the class.
     @Property({ type: "date" })
     createdAt = new Date();
 
