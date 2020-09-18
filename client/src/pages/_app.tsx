@@ -1,7 +1,13 @@
 import { ThemeProvider, CSSReset } from "@chakra-ui/core";
 import { cacheExchange, Cache, QueryInput } from "@urql/exchange-graphcache";
 import { Provider, createClient, dedupExchange, fetchExchange } from "urql";
-import { LoginMutation, MeDocument, MeQuery, RegisterMutation } from "../generated/graphql";
+import {
+    LoginMutation,
+    LogoutMutation,
+    MeDocument,
+    MeQuery,
+    RegisterMutation
+} from "../generated/graphql";
 
 import theme from "../theme";
 
@@ -23,7 +29,7 @@ const client = createClient({
     /**
      * this block of code below will run everytime the login or register
      * mutation runs and it's purpose is to update the cache.
-     * 
+     *
      * In particular we are updating the me query and placing the correct
      * user inside of there.
      */
@@ -32,6 +38,15 @@ const client = createClient({
         cacheExchange({
             updates: {
                 Mutation: {
+                    logout: (_result, args, cache, info) => {
+                        // return null for the me query when the user is logged out
+                        betterUpdateQuery<LogoutMutation, MeQuery>(
+                            cache,
+                            { query: MeDocument },
+                            _result,
+                            () => ({ me: null })
+                        );
+                    },
                     login: (_result, args, cache, info) => {
                         betterUpdateQuery<LoginMutation, MeQuery>(
                             cache,
