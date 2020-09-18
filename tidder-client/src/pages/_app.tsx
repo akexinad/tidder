@@ -3,7 +3,10 @@ import { Provider, createClient } from "urql";
 
 const client = createClient({
     url: "http://localhost:4000/graphql",
-    fetchOptions: {}
+    // this is important for cookie data
+    fetchOptions: {
+        credentials: "include"
+    }
 });
 
 import theme from "../theme";
