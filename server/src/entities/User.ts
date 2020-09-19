@@ -28,6 +28,10 @@ export class User {
     @Property({ type: "text", unique: true })
     username!: string;
 
+    @Field(() => String)
+    @Property({ type: "text", unique: true })
+    email!: string;
+
     // we remove the field property so you cannot query it.
     @Property({ type: "text" })
     password!: string;
