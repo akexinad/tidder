@@ -1,6 +1,8 @@
 /node_modules
 /dist
 
+priv.ts
+
 .DS_Store
 .env.local
 .env.development.local
