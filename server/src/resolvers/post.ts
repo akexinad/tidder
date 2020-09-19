@@ -5,7 +5,9 @@ import { Arg, Ctx, Int, Mutation, Query, Resolver } from "type-graphql";
 @Resolver()
 export class PostResolver {
     @Query(() => [Post])
-    posts(@Ctx() { orm }: MyContext): Promise<Array<Post>> {
+    async posts(@Ctx() { orm }: MyContext): Promise<Array<Post>> {
+        // using the sleeper function to show how SSR works
+        // await sleep(3000);
         return orm.em.find(Post, {});
     }
 
