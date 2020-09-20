@@ -14,11 +14,14 @@ import { EntityManager } from "@mikro-orm/postgresql";
 import { MyContext } from "src/types";
 
 import { COOKIE_NAME } from "../constants";
+import { validateRegister } from "../utils/validateRegister";
+
+import { RegisterInput } from "./RegisterInput";
 
 import { User } from "../entities/User";
 
 @InputType()
-class UsernamePasswordInput {
+class LoginInput {
     @Field()
     username: string;
 
@@ -46,6 +49,9 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+    // FORGOT PASSWORD
+    
+
     @Query(() => User, { nullable: true })
     async me(@Ctx() { orm, req }: MyContext): Promise<User | null> {
         // you are not logged in
@@ -58,34 +64,21 @@ export class UserResolver {
         return user;
     }
 
+    // REGISTER
     @Mutation(() => UserResponse)
     async register(
-        @Arg("options") options: UsernamePasswordInput,
+        @Arg("options") options: RegisterInput,
         @Ctx() { orm, req }: MyContext
     ): Promise<UserResponse> {
-        if (options.username.length <= 2) {
-            return {
-                errors: [
-                    {
-                        field: "username",
-                        message: "username is too short"
-                    }
-                ]
-            };
+        const { username, email, password } = options;
+
+        const errors = validateRegister(options);
+
+        if (errors) {
+            return { errors };
         }
 
-        if (options.password.length <= 5) {
-            return {
-                errors: [
-                    {
-                        field: "password",
-                        message: "password is too short"
-                    }
-                ]
-            };
-        }
-
-        const hashedPass = await argon2.hash(options.password);
+        const hashedPass = await argon2.hash(password);
 
         let user;
 
@@ -94,8 +87,9 @@ export class UserResolver {
                 .createQueryBuilder(User)
                 .getKnexQuery()
                 .insert({
-                    username: options.username,
+                    username,
                     password: hashedPass,
+                    email,
                     created_at: new Date(),
                     updated_at: new Date()
                 })
@@ -124,9 +118,10 @@ export class UserResolver {
         };
     }
 
+    // LOGIN
     @Mutation(() => UserResponse)
     async login(
-        @Arg("options") options: UsernamePasswordInput,
+        @Arg("options") options: LoginInput,
         @Ctx() { orm, req }: MyContext
     ): Promise<UserResponse> {
         const user = await orm.em.findOne(User, {
@@ -173,7 +168,7 @@ export class UserResolver {
                     resolve(false);
                     return;
                 }
-                
+
                 res.clearCookie(COOKIE_NAME);
                 resolve(true);
             })

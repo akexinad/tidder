@@ -13,8 +13,6 @@ export const NavBar: FC = () => {
     });
     const [{ fetching: logoutFetching }, logout] = useLogoutMutation();
 
-    console.log('data', data)
-
     let body = null;
 
     if (fetching) {
