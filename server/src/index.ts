@@ -23,7 +23,7 @@ import { UserResolver } from "./resolvers/user";
 
 
 const main = async () => {
-    const connection = await createConnection({
+    await createConnection({
         type: "postgres",
         database: "tidder",
         username: "postgres",
