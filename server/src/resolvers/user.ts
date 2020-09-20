@@ -179,7 +179,6 @@ export class UserResolver {
         @Arg("options") options: RegisterInput,
         @Ctx() { req }: MyContext
     ): Promise<UserResponse> {
-        const { username, email, password } = options;
 
         const errors = validateRegister(options);
 
@@ -187,21 +186,20 @@ export class UserResolver {
             return { errors };
         }
 
-        const hashedPass = await argon2.hash(password);
+        const hashedPass = await argon2.hash(options.password);
 
         let user;
 
         try {
             user = await User.create({
-                username,
-                email,
+                ...options,
                 password: hashedPass
             }).save();
 
             req.session.userId = user.id;
 
             /*
-            the above is a cleaner way of creating a user
+            NOTE: Above is a cleaner way of creating a user.
             
             const result = await getConnection()
                 .createQueryBuilder()
