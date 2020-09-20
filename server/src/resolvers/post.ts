@@ -1,65 +1,45 @@
 import { Post } from "../entities/Post";
-import { MyContext } from "../types";
-import { Arg, Ctx, Int, Mutation, Query, Resolver } from "type-graphql";
+import { Arg, Int, Mutation, Query, Resolver } from "type-graphql";
 
 @Resolver()
 export class PostResolver {
     @Query(() => [Post])
-    async posts(@Ctx() { orm }: MyContext): Promise<Array<Post>> {
+    async posts(): Promise<Array<Post>> {
         // using the sleeper function to show how SSR works
         // await sleep(3000);
-        return orm.em.find(Post, {});
+        return Post.find();
     }
 
     @Query(() => Post, { nullable: true })
-    post(
-        @Arg("id", () => Int) id: number,
-        @Ctx() { orm }: MyContext
-    ): Promise<Post | null> {
-        return orm.em.findOne(Post, { id });
+    post(@Arg("id", () => Int) id: number): Promise<Post | undefined> {
+        return Post.findOne(id);
     }
 
     @Mutation(() => Post)
-    async createPost(
-        @Arg("title", () => String) title: string,
-        @Ctx() { orm }: MyContext
-    ): Promise<Post> {
-        const post = orm.em.create(Post, { title });
-
-        await orm.em.persistAndFlush(post);
-
-        return post;
+    async createPost(@Arg("title", () => String) title: string): Promise<Post> {
+        return Post.create({ title }).save();
     }
 
     @Mutation(() => Post, { nullable: true })
     async editPost(
         @Arg("id") id: number,
-        @Arg("title", () => String, { nullable: true }) title: string,
-        @Ctx() { orm }: MyContext
-    ): Promise<Post | null> {
-        const post = await orm.em.findOne(Post, { id });
+        @Arg("title", () => String, { nullable: true }) title: string
+    ): Promise<Post | undefined> {
+        const post = await Post.findOne(id);
 
-        if (!post) return null;
+        if (!post) return undefined;
 
         // in the case that they don't provide a new title
         if (typeof title !== undefined) {
-            post.title = title;
-            await orm.em.persistAndFlush(post);
+            await Post.update({ id }, { title });
         }
 
         return post;
     }
 
     @Mutation(() => Boolean)
-    async deletePost(
-        @Arg("id") id: number,
-        @Ctx() { orm }: MyContext
-    ): Promise<boolean> {
-        const post = await orm.em.findOne(Post, { id });
-
-        if (!post) return false;
-
-        await orm.em.nativeDelete(Post, { id });
+    async deletePost(@Arg("id", () => Int) id: number): Promise<boolean> {
+        await Post.delete(id);
         return true;
     }
 }

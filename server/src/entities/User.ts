@@ -1,5 +1,12 @@
-import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
+import { Entity } from "typeorm";
 import { Field, ObjectType } from "type-graphql";
+import {
+    BaseEntity,
+    Column,
+    CreateDateColumn,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn
+} from "typeorm";
 
 /**
  * the @ObjectType() tells type graphql to
@@ -9,30 +16,30 @@ import { Field, ObjectType } from "type-graphql";
  */
 @ObjectType()
 @Entity()
-export class User {
+export class User extends BaseEntity {
     @Field()
-    @PrimaryKey()
+    @PrimaryGeneratedColumn()
     id!: number;
 
     // Adding the field decortor will expose the property to graphql
     @Field(() => String)
     // the property decorator tells postgres that these are columns, not just fields in the class.
-    @Property({ type: "date" })
-    createdAt = new Date();
+    @CreateDateColumn()
+    createdAt: Date;
 
     @Field(() => String)
-    @Property({ type: "date", onUpdate: () => new Date() })
-    updatedAt = new Date();
+    @UpdateDateColumn()
+    updatedAt: Date;
 
     @Field(() => String)
-    @Property({ type: "text", unique: true })
+    @Column({ unique: true })
     username!: string;
 
     @Field(() => String)
-    @Property({ type: "text", unique: true })
+    @Column({ unique: true })
     email!: string;
 
     // we remove the field property so you cannot query it.
-    @Property({ type: "text" })
+    @Column()
     password!: string;
 }

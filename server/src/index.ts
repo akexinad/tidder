@@ -1,5 +1,4 @@
 import "reflect-metadata";
-import { MikroORM } from "@mikro-orm/core";
 import { ApolloServer } from "apollo-server-express";
 import express from "express";
 import { buildSchema } from "type-graphql";
@@ -7,25 +6,33 @@ import Redis from "ioredis";
 import session from "express-session";
 import connectRedis from "connect-redis";
 import cors from "cors";
+import { createConnection } from "typeorm";
+
+import { MyContext } from "./types";
 
 import { COOKIE_NAME, __prod__ } from "./constants";
+import { POSTGRES_PASS } from "./priv";
 
-import mikroOrmConfig from "./mikro-orm.config";
+
+import { Post } from "./entities/Post";
+import { User } from "./entities/User";
 
 import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
-import { MyContext } from "./types";
+
 
 const main = async () => {
-    const orm = await MikroORM.init(mikroOrmConfig);
-
-    /**
-     * This automatically runs the migration for you
-     * so you don't have to do it via the cli
-     */
-    await orm.getMigrator().up();
-
+    const connection = await createConnection({
+        type: "postgres",
+        database: "tidder",
+        username: "postgres",
+        password: POSTGRES_PASS,
+        logging: true,
+        synchronize: true, // this prop will set up your schema automatically when set to true.
+        entities: [Post, User]
+    });
+    
     const app = express();
 
     /**
@@ -74,7 +81,7 @@ const main = async () => {
         }),
         // apollo accesses cookies via the req and res objects
         //@ts-ignore
-        context: ({ req, res }): MyContext => ({ orm, req, res, redis })
+        context: ({ req, res }): MyContext => ({ req, res, redis })
     });
 
     apolloServer.applyMiddleware({

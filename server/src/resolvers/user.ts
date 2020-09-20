@@ -9,14 +9,12 @@ import {
     Query,
     Resolver
 } from "type-graphql";
-import { EntityManager } from "@mikro-orm/postgresql";
 import { v4 } from "uuid";
 import validator from "validator";
 
 import { MyContext } from "../types";
 
-import { FORGOT_PASSWORD_PREFIX } from "../priv";
-import { COOKIE_NAME } from "../constants";
+import { COOKIE_NAME, FORGOT_PASSWORD_PREFIX } from "../constants";
 import { validateRegister } from "../utils/validateRegister";
 import { sendEmail } from "../utils/sendEmail";
 
@@ -58,7 +56,7 @@ export class UserResolver {
     async changePassword(
         @Arg("token") token: string,
         @Arg("newPassword") newPassword: string,
-        @Ctx() { orm, req, redis }: MyContext
+        @Ctx() { req, redis }: MyContext
     ): Promise<UserResponse> {
         const validPassword = validator.isLength(newPassword, {
             min: 2
@@ -94,7 +92,8 @@ export class UserResolver {
             };
         }
 
-        const user = await orm.em.findOne(User, { id: parseInt(userId) });
+        const userIdAsInt = parseInt(userId);
+        const user = await User.findOne(userIdAsInt);
 
         if (!user) {
             /**
@@ -111,9 +110,14 @@ export class UserResolver {
             };
         }
 
-        user.password = await argon2.hash(newPassword);
+        const newHashedPass = await argon2.hash(user.password);
 
-        orm.em.persistAndFlush(user);
+        User.update(
+            { id: userIdAsInt },
+            {
+                password: newHashedPass
+            }
+        );
 
         // delete the key so the user cannot change the password again with the same link
         await redis.del(redisKey);
@@ -130,9 +134,10 @@ export class UserResolver {
     @Mutation(() => Boolean)
     async forgotPassword(
         @Arg("email") email: string,
-        @Ctx() { orm, redis }: MyContext
+        @Ctx() { redis }: MyContext
     ) {
-        const user = await orm.em.findOne(User, { email });
+        // email is not the primary key, therefore we need to use this syntax
+        const user = await User.findOne({ where: { email } });
 
         if (!user) {
             /**
@@ -159,22 +164,20 @@ export class UserResolver {
     }
 
     @Query(() => User, { nullable: true })
-    async me(@Ctx() { orm, req }: MyContext): Promise<User | null> {
+    async me(@Ctx() { req }: MyContext) {
         // you are not logged in
         if (!req.session.userId) {
-            return null;
+            return undefined;
         }
 
-        const user = await orm.em.findOne(User, { id: req.session.userId });
-
-        return user;
+        return await User.findOne(req.session.userId);
     }
 
     // REGISTER
     @Mutation(() => UserResponse)
     async register(
         @Arg("options") options: RegisterInput,
-        @Ctx() { orm, req }: MyContext
+        @Ctx() { req }: MyContext
     ): Promise<UserResponse> {
         const { username, email, password } = options;
 
@@ -189,18 +192,31 @@ export class UserResolver {
         let user;
 
         try {
-            const result = await (orm.em as EntityManager)
-                .createQueryBuilder(User)
-                .getKnexQuery()
-                .insert({
+            user = await User.create({
+                username,
+                email,
+                password: hashedPass
+            }).save();
+
+            req.session.userId = user.id;
+
+            /*
+            the above is a cleaner way of creating a user
+            
+            const result = await getConnection()
+                .createQueryBuilder()
+                .insert()
+                .into(User)
+                .values({
                     username,
-                    password: hashedPass,
                     email,
-                    created_at: new Date(),
-                    updated_at: new Date()
+                    password: hashedPass
                 })
-                .returning("*");
-            user = result[0];
+                .returning("*")
+                .execute();
+
+            user = result.raw[0];
+            */
         } catch (err) {
             // duplicate username error
             if (
@@ -217,8 +233,6 @@ export class UserResolver {
                 };
         }
 
-        req.session.userId = user.id;
-
         return {
             user
         };
@@ -228,10 +242,12 @@ export class UserResolver {
     @Mutation(() => UserResponse)
     async login(
         @Arg("options") options: LoginInput,
-        @Ctx() { orm, req }: MyContext
+        @Ctx() { req }: MyContext
     ): Promise<UserResponse> {
-        const user = await orm.em.findOne(User, {
-            username: options.username
+        const user = await User.findOne({
+            where: {
+                username: options.username
+            }
         });
 
         if (!user) {
