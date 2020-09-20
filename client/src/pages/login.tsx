@@ -1,7 +1,8 @@
 import React, { FC } from "react";
 import { Form, Formik } from "formik";
-import { Box, Button } from "@chakra-ui/core";
+import { Box, Button, Flex, Link } from "@chakra-ui/core";
 import { useRouter } from "next/router";
+import NextLink from "next/link";
 
 import { useLoginMutation } from "../generated/graphql";
 
@@ -45,7 +46,12 @@ export const Login: FC<{}> = ({}) => {
                                 label="Password"
                                 type="password"
                             />
-                        </Box>
+                        </Box>{" "}
+                        <Flex>
+                            <NextLink href={"/forgot-password"}>
+                                <Link ml="auto" mt={2} fontWeight="bold">Forgot Password?</Link>
+                            </NextLink>
+                        </Flex>
                         <Button
                             mt={4}
                             type="submit"
