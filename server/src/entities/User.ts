@@ -1,4 +1,4 @@
-import { Entity } from "typeorm";
+import { Entity, OneToMany } from "typeorm";
 import { Field, ObjectType } from "type-graphql";
 import {
     BaseEntity,
@@ -7,6 +7,8 @@ import {
     PrimaryGeneratedColumn,
     UpdateDateColumn
 } from "typeorm";
+
+import { Post } from "./Post";
 
 /**
  * the @ObjectType() tells type graphql to
@@ -21,25 +23,27 @@ export class User extends BaseEntity {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    // Adding the field decortor will expose the property to graphql
-    @Field(() => String)
-    // the property decorator tells postgres that these are columns, not just fields in the class.
-    @CreateDateColumn()
-    createdAt: Date;
-
-    @Field(() => String)
-    @UpdateDateColumn()
-    updatedAt: Date;
-
-    @Field(() => String)
+    @Field()
     @Column({ unique: true })
     username!: string;
 
-    @Field(() => String)
+    @Field()
     @Column({ unique: true })
     email!: string;
 
     // we remove the field property so you cannot query it.
     @Column()
     password!: string;
+
+    @OneToMany(() => Post, post => post.author)
+    posts: Array<Post>;
+    
+    // Adding the field decortor will expose the property to graphql
+    @Field()
+    @CreateDateColumn()
+    createdAt: Date;
+
+    @Field()
+    @UpdateDateColumn()
+    updatedAt: Date;
 }

@@ -5,8 +5,9 @@ import {
     PrimaryGeneratedColumn,
     Column,
     Entity,
-    BaseEntity
+    BaseEntity, ManyToOne
 } from "typeorm";
+import { User } from "./User";
 
 /**
  * the @ObjectType() tells type graphql to
@@ -21,17 +22,30 @@ export class Post extends BaseEntity {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    // Adding the field decortor will expose the property to graphql
-    @Field(() => String)
-    // the property decorator tells postgres that these are columns, not just fields in the class.
+    @Field()
+    @Column()
+    title!: string;
+
+    @Field()
+    @Column()
+    text!: string;
+
+    @Field()
+    @Column({type: "int", default: 0})
+    points!: number;
+    
+    @Field()
+    @Column()
+    authorId!: number;
+    
+    @ManyToOne(() => User, user => user.posts)
+    author: User;
+
+    @Field()
     @CreateDateColumn()
     createdAt: Date;
 
-    @Field(() => String)
+    @Field()
     @UpdateDateColumn()
     updatedAt: Date;
-
-    @Field(() => String)
-    @Column()
-    title!: string;
 }
