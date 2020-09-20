@@ -18,7 +18,7 @@ module.exports = {
         "@typescript-eslint/explicit-function-return-type": 1,
         "@typescript-eslint/interface-name-prefix": 0,
         "@typescript-eslint/no-array-constructor": "warn",
-        "@typescript-eslint/no-unused-vars": ["warn", { args: "none" }],
+        "@typescript-eslint/no-unused-vars": ["warn"],
         "no-var": "warn",
         "prefer-arrow-callback": "warn",
         "prefer-const": "warn",
