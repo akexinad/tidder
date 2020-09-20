@@ -28,8 +28,6 @@ export const Login: FC<{}> = ({}) => {
                     } else if (response.data.login.user) {
                         router.push("/");
                     }
-
-                    response.data.login.user.id;
                 }}
             >
                 {({ isSubmitting }) => (
