@@ -7,8 +7,6 @@ export const useIsAuth = () => {
     const router = useRouter();
     const [{ data, fetching }] = useMeQuery();
 
-    console.log('router', router);
-
     useEffect(() => {
         if (!fetching && !data.me) {
             /**

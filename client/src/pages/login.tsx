@@ -16,8 +16,6 @@ import { InputField } from "../components/InputField";
 export const Login: FC<{}> = ({}) => {
     const router = useRouter();
 
-    console.log("router", router);
-
     const [, login] = useLoginMutation();
 
     return (
