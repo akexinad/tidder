@@ -1,16 +1,23 @@
 import { withUrqlClient } from "next-urql";
 import React from "react";
+import { Link } from "@chakra-ui/core";
+import NextLink from "next/link";
 
-import { NavBar } from "../components/NavBar";
 import { usePostsQuery } from "../generated/graphql";
+
 import { createUrqlClient } from "../utils/createUrqlClient";
+
+import Layout from "../components/Layout";
 
 const Index = () => {
     const [{ data }] = usePostsQuery();
 
     return (
-        <>
-            <NavBar />
+        <Layout>
+            <NextLink href="/create-post">
+                <Link>Create Post</Link>
+            </NextLink>
+            <br />
             {!data ? (
                 <div>loading...</div>
             ) : (
@@ -24,13 +31,13 @@ const Index = () => {
                     </div>
                 ))
             )}
-        </>
+        </Layout>
     );
 };
 
 /**
  * TIP
- * 
+ *
  * Only use SSR if you want the data on a particular to be found by google
  * or if you want the page to follow SEO practices.
  */
