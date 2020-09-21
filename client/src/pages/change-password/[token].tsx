@@ -30,10 +30,16 @@ import { Wrapper } from "../../components/Wrapper";
  * name is square brackets.
  */
 
-const ChangePassword: NextPage<{ token: string }> = ({ token }) => {
+const ChangePassword: NextPage = () => {
     const router = useRouter();
+    /**
+     * next js and the router knows it's called a token 
+     * is because of the file name.
+     */
+    const {
+        query: { token }
+    } = router;
     const [, changePassword] = useChangePasswordMutation();
-
     const [tokenError, setTokenError] = useState("");
 
     return (
@@ -43,7 +49,7 @@ const ChangePassword: NextPage<{ token: string }> = ({ token }) => {
                 onSubmit={async (values, { setErrors }) => {
                     const response = await changePassword({
                         newPassword: values.newPassword,
-                        token
+                        token: Array.isArray(token) ? token[0] : token
                     });
 
                     if (response.data.changePassword.errors) {
@@ -102,12 +108,6 @@ const ChangePassword: NextPage<{ token: string }> = ({ token }) => {
             </Formik>
         </Wrapper>
     );
-};
-
-ChangePassword.getInitialProps = ({ query }) => {
-    return {
-        token: query.token as string
-    };
 };
 
 export default withUrqlClient(createUrqlClient, { ssr: false })(ChangePassword);

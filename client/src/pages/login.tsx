@@ -3,17 +3,21 @@ import { Form, Formik } from "formik";
 import { Box, Button, Flex, Link } from "@chakra-ui/core";
 import { useRouter } from "next/router";
 import NextLink from "next/link";
+import { withUrqlClient } from "next-urql";
 
 import { useLoginMutation } from "../generated/graphql";
 
+import { createUrqlClient } from "../utils/createUrqlClient";
+import { toErrorMap } from "../utils/toErrorMap";
+
 import { Wrapper } from "../components/Wrapper";
 import { InputField } from "../components/InputField";
-import { toErrorMap } from "../utils/toErrorMap";
-import { withUrqlClient } from "next-urql";
-import { createUrqlClient } from "../utils/createUrqlClient";
 
 export const Login: FC<{}> = ({}) => {
     const router = useRouter();
+
+    console.log("router", router);
+
     const [, login] = useLoginMutation();
 
     return (
@@ -26,7 +30,9 @@ export const Login: FC<{}> = ({}) => {
                     if (response.data.login.errors) {
                         setErrors(toErrorMap(response.data.login.errors));
                     } else if (response.data.login.user) {
-                        router.push("/");
+                        typeof router.query.next === "string"
+                            ? router.push(router.query.next)
+                            : router.push("/");
                     }
                 }}
             >
@@ -47,7 +53,9 @@ export const Login: FC<{}> = ({}) => {
                         </Box>{" "}
                         <Flex>
                             <NextLink href={"/forgot-password"}>
-                                <Link ml="auto" mt={2} fontWeight="bold">Forgot Password?</Link>
+                                <Link ml="auto" mt={2} fontWeight="bold">
+                                    Forgot Password?
+                                </Link>
                             </NextLink>
                         </Flex>
                         <Button
