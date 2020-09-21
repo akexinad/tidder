@@ -14,6 +14,7 @@ import {
 import { MyContext } from "src/types";
 
 import { isAuth } from "../middleware/isAuth";
+import { getConnection } from "typeorm";
 
 @InputType()
 class PostInput {
@@ -27,10 +28,31 @@ class PostInput {
 @Resolver()
 export class PostResolver {
     @Query(() => [Post])
-    async posts(): Promise<Array<Post>> {
+    async posts(
+        @Arg("limit", () => Int) limit: number,
+        @Arg("cursor", () => String, { nullable: true }) cursor: string
+    ): Promise<Array<Post>> {
+        // caps the limit at 50
+        const realLimit = Math.min(50, limit);
+
+        const qb = getConnection()
+            .getRepository(Post)
+            .createQueryBuilder("p")
+            /**
+             * we need to use double quotations here so
+             * postgresql knows what column to look for.
+             */
+            .orderBy('"createdAt"', "DESC")
+            .take(realLimit);
+
+        if (cursor) {
+            qb.where('"createdAt" < :cursor', { cursor: new Date(+cursor) });
+        }
+
+        return qb.getMany();
+
         // using the sleeper function to show how SSR works
         // await sleep(3000);
-        return Post.find();
     }
 
     @Query(() => Post, { nullable: true })
