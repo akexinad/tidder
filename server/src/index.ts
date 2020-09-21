@@ -7,12 +7,12 @@ import session from "express-session";
 import connectRedis from "connect-redis";
 import cors from "cors";
 import { createConnection } from "typeorm";
+import path from "path";
 
 import { MyContext } from "./types";
 
 import { COOKIE_NAME, __prod__ } from "./constants";
 import { POSTGRES_PASS } from "./priv";
-
 
 import { Post } from "./entities/Post";
 import { User } from "./entities/User";
@@ -21,7 +21,6 @@ import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 
-
 const main = async () => {
     await createConnection({
         type: "postgres",
@@ -29,10 +28,13 @@ const main = async () => {
         username: "postgres",
         password: POSTGRES_PASS,
         logging: true,
+        migrations: [path.join(__dirname, "./migrations/*")],
         synchronize: true, // this prop will set up your schema automatically when set to true.
         entities: [Post, User]
     });
-    
+
+    // await connection.runMigrations();
+
     const app = express();
 
     /**
