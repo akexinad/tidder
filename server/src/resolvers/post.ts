@@ -18,10 +18,10 @@ import { isAuth } from "../middleware/isAuth";
 @InputType()
 class PostInput {
     @Field()
-    title: string;
+    title!: string;
 
     @Field()
-    text: string;
+    text!: string;
 }
 
 @Resolver()
