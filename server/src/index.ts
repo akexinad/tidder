@@ -31,7 +31,10 @@ const main = async () => {
         migrations: [path.join(__dirname, "./migrations/*")],
         synchronize: true, // this prop will set up your schema automatically when set to true.
         entities: [Post, User]
-    });
+    })
+
+    // await Post.delete({});
+    // await User.delete({});
 
     // await connection.runMigrations();
 

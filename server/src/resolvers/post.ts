@@ -3,18 +3,21 @@ import {
     Arg,
     Ctx,
     Field,
+    FieldResolver,
     InputType,
     Int,
     Mutation,
+    ObjectType,
     Query,
     Resolver,
+    Root,
     UseMiddleware
 } from "type-graphql";
+import { getConnection } from "typeorm";
 
 import { MyContext } from "src/types";
 
 import { isAuth } from "../middleware/isAuth";
-import { getConnection } from "typeorm";
 
 @InputType()
 class PostInput {
@@ -25,15 +28,34 @@ class PostInput {
     text!: string;
 }
 
-@Resolver()
+@ObjectType()
+class PaginatedPosts {
+    @Field(() => [Post])
+    posts: Post[];
+    @Field()
+    hasMore: boolean;
+}
+
+@Resolver(Post)
 export class PostResolver {
-    @Query(() => [Post])
+    /**
+     * this resolver will let us call for textSnippet instead of text
+     * from our front end so we don't need to download all the data.
+     */
+    @FieldResolver(() => String)
+    textSnippet(@Root() root: Post) {
+        return root.text.slice(0, 50) + "...";
+    }
+
+    @Query(() => PaginatedPosts)
     async posts(
         @Arg("limit", () => Int) limit: number,
         @Arg("cursor", () => String, { nullable: true }) cursor: string
-    ): Promise<Array<Post>> {
+    ): Promise<PaginatedPosts> {
         // caps the limit at 50
         const realLimit = Math.min(50, limit);
+
+        const realLimitPlusOne = realLimit + 1;
 
         const qb = getConnection()
             .getRepository(Post)
@@ -43,16 +65,18 @@ export class PostResolver {
              * postgresql knows what column to look for.
              */
             .orderBy('"createdAt"', "DESC")
-            .take(realLimit);
+            .take(realLimitPlusOne);
 
         if (cursor) {
             qb.where('"createdAt" < :cursor', { cursor: new Date(+cursor) });
         }
 
-        return qb.getMany();
+        const posts = await qb.getMany();
 
-        // using the sleeper function to show how SSR works
-        // await sleep(3000);
+        return {
+            posts: posts.slice(0, realLimit),
+            hasMore: posts.length === realLimitPlusOne
+        };
     }
 
     @Query(() => Post, { nullable: true })
@@ -61,6 +85,10 @@ export class PostResolver {
     }
 
     @Mutation(() => Post)
+    /**
+     * Example of how only authorized users are allowed
+     * to create posts.
+     */
     @UseMiddleware(isAuth)
     async createPost(
         @Arg("options") options: PostInput,

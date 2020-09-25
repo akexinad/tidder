@@ -1,42 +1,62 @@
+import { Box, Button, Flex, Heading, Link, Stack, Text } from "@chakra-ui/core";
 import { withUrqlClient } from "next-urql";
-import React from "react";
-import { Link } from "@chakra-ui/core";
 import NextLink from "next/link";
-
+import React, { useState } from "react";
+import Layout from "../components/Layout";
 import { usePostsQuery } from "../generated/graphql";
-
 import { createUrqlClient } from "../utils/createUrqlClient";
 
-import Layout from "../components/Layout";
-
 const Index = () => {
-    const [{ data }] = usePostsQuery({
-        variables: {
-            limit: 10
-        }
+    const [variables, setVariables] = useState({ limit: 50, cursor: null });
+
+    const [{ data, fetching }] = usePostsQuery({
+        variables
     });
+
+    if (!fetching && !data) {
+        return <div>query failed. Check network tab.</div>;
+    }
 
     return (
         <Layout>
-            <NextLink href="/create-post">
-                <Link fontWeight={"bold"}>CREATE POST</Link>
-            </NextLink>
+            <Flex>
+                <Heading>TiDDER</Heading>
+                <NextLink href="/create-post">
+                    <Link m="auto 0 auto auto">create post</Link>
+                </NextLink>
+            </Flex>
             <br />
-            <br />
-            <br />
-            {!data ? (
+            {fetching && !data ? (
                 <div>loading...</div>
             ) : (
-                data.posts.map((p) => (
-                    <div key={p.id}>
-                        <h1>{p.title}</h1>
-                        <br />
-                        <p>{p.createdAt}</p>
-                        <p>{p.updatedAt}</p>
-                        <br />
-                    </div>
-                ))
+                <Stack mb={10} spacing={8}>
+                    {data.posts.posts.map((p) => (
+                        <Box key={p.id} p={5} shadow="md" borderWidth="1px">
+                            <Heading fontSize="xl">{p.title}</Heading>
+                            <Text mt={4}>{p.textSnippet}</Text>
+                        </Box>
+                    ))}
+                </Stack>
             )}
+            {data && data.posts.hasMore ? (
+                <Flex>
+                    <Button
+                        onClick={() =>
+                            setVariables({
+                                limit: variables.limit,
+                                cursor:
+                                    data.posts.posts[data.posts.posts.length - 1]
+                                        .createdAt
+                            })
+                        }
+                        isLoading={fetching}
+                        m="auto"
+                        my={8}
+                    >
+                        Load More
+                    </Button>
+                </Flex>
+            ) : null}
         </Layout>
     );
 };
