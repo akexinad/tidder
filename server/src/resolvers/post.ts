@@ -4,6 +4,7 @@ import {
     Ctx,
     Field,
     FieldResolver,
+    Info,
     InputType,
     Int,
     Mutation,
@@ -15,7 +16,7 @@ import {
 } from "type-graphql";
 import { getConnection } from "typeorm";
 
-import { MyContext } from "src/types";
+import { MyContext } from "../types";
 
 import { isAuth } from "../middleware/isAuth";
 
@@ -50,25 +51,53 @@ export class PostResolver {
     @Query(() => PaginatedPosts)
     async posts(
         @Arg("limit", () => Int) limit: number,
-        @Arg("cursor", () => String, { nullable: true }) cursor: string
+        @Arg("cursor", () => String, { nullable: true }) cursor: string,
+        @Info() info: ParameterDecorator
     ): Promise<PaginatedPosts> {
         // caps the limit at 50
         const realLimit = Math.min(50, limit);
 
         const realLimitPlusOne = realLimit + 1;
 
+        // const posts = await getConnection().query(
+        // `
+        // select p.*,
+        // json_build_object(
+        //     'id', u.id,
+        //     'username', u.username,
+        //     'email', u.email
+        // ) author
+        // from post p
+        // inner join public.user u on u.id = p."authorId"
+        // ${cursor ? `where p."createdAt" < $2` : ""}
+        // order by p."createdAt" DESC
+        // limit $1
+        // `,
+        //     replacements
+        // );
+
+        /**
+         * Ben uses aliases in his tutorial which seems to not work
+         * anymore. here if we just use the entity name and the
+         * leftAndInnerJoin function, it all works normally without
+         * having to use your own sql query as ben did above.
+         *
+         * However this might, idk yet.
+         */
+
         const qb = getConnection()
             .getRepository(Post)
-            .createQueryBuilder("p")
+            .createQueryBuilder("post")
             /**
              * we need to use double quotations here so
              * postgresql knows what column to look for.
              */
-            .orderBy('"createdAt"', "DESC")
+            .leftJoinAndSelect("post.author", "user")
+            .orderBy("post.createdAt", "DESC")
             .take(realLimitPlusOne);
 
         if (cursor) {
-            qb.where('"createdAt" < :cursor', { cursor: new Date(+cursor) });
+            qb.where("post.createdAt < :cursor", { cursor: new Date(+cursor) });
         }
 
         const posts = await qb.getMany();

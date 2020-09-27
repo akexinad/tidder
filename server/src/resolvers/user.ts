@@ -3,11 +3,13 @@ import {
     Arg,
     Ctx,
     Field,
+    FieldResolver,
     InputType,
     Mutation,
     ObjectType,
     Query,
-    Resolver
+    Resolver,
+    Root
 } from "type-graphql";
 import { v4 } from "uuid";
 import validator from "validator";
@@ -49,8 +51,21 @@ class UserResponse {
     user?: User;
 }
 
+/**
+ * This is so the current logged in user can only see
+ * his own email and not the emails of other users. 
+ */
 @Resolver(User)
 export class UserResolver {
+    @FieldResolver(() => String)
+    email(@Root() user: User, @Ctx() { req }: MyContext) {
+        if (req.session.userId === user.id) {
+            return user.email;
+        }
+
+        return "";
+    }
+
     // CHANGE PASSWORD
     @Mutation(() => UserResponse)
     async changePassword(
@@ -179,7 +194,6 @@ export class UserResolver {
         @Arg("options") options: RegisterInput,
         @Ctx() { req }: MyContext
     ): Promise<UserResponse> {
-
         const errors = validateRegister(options);
 
         if (errors) {
