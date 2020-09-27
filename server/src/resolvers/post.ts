@@ -52,7 +52,6 @@ export class PostResolver {
     async posts(
         @Arg("limit", () => Int) limit: number,
         @Arg("cursor", () => String, { nullable: true }) cursor: string,
-        @Info() info: ParameterDecorator
     ): Promise<PaginatedPosts> {
         // caps the limit at 50
         const realLimit = Math.min(50, limit);
