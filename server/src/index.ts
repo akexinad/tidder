@@ -31,7 +31,7 @@ const main = async () => {
         migrations: [path.join(__dirname, "./migrations/*")],
         synchronize: true, // this prop will set up your schema automatically when set to true.
         entities: [Post, User]
-    })
+    });
 
     // await Post.delete({});
     // await User.delete({});
@@ -85,8 +85,7 @@ const main = async () => {
             validate: false
         }),
         // apollo accesses cookies via the req and res objects
-        //@ts-ignore
-        context: ({ req, res }): MyContext => ({ req, res, redis })
+        context: ({ req, res }) => ({ req, res, redis })
     });
 
     apolloServer.applyMiddleware({
