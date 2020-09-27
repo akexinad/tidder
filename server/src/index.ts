@@ -9,8 +9,6 @@ import cors from "cors";
 import { createConnection } from "typeorm";
 import path from "path";
 
-import { MyContext } from "./types";
-
 import { COOKIE_NAME, __prod__ } from "./constants";
 import { POSTGRES_PASS } from "./priv";
 
