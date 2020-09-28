@@ -6,7 +6,7 @@ interface LayoutProps {
     variant?: WrapperVariant;
 }
 
-const Layout: FC<LayoutProps> = ({ variant, children }) => {
+export const Layout: FC<LayoutProps> = ({ variant, children }) => {
     return (
         <>
             <NavBar />
@@ -14,5 +14,3 @@ const Layout: FC<LayoutProps> = ({ variant, children }) => {
         </>
     );
 };
-
-export default Layout;
