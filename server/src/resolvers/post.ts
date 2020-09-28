@@ -116,7 +116,7 @@ export class PostResolver {
 
         /**
          * Ben uses aliases in his tutorial which seems to not work
-         * anymore. here if we just use the entity name and the
+         * correctly. here if we just use the entity name and the
          * leftAndInnerJoin function, it all works normally without
          * having to use your own sql query as ben did above.
          *
@@ -147,8 +147,23 @@ export class PostResolver {
     }
 
     @Query(() => Post, { nullable: true })
-    post(@Arg("id", () => Int) id: number): Promise<Post | undefined> {
-        return Post.findOne(id);
+    // post(@Arg("id", () => Int) id: number): Promise<Post | undefined> {
+    async post(@Arg("id", () => Int) id: number): Promise<Post | null> {
+        // return Post.findOne(id);
+
+        const post = await getConnection()
+            .getRepository(Post)
+            .createQueryBuilder("post")
+            .leftJoinAndSelect("post.author", "user")
+            .where(`post.id = ${id}`)
+            .getOne();
+
+        if (post === undefined) {
+            console.error("There was error getting a single post");
+            return null;
+        }
+
+        return post;
     }
 
     @Mutation(() => Post)
