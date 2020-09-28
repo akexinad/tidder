@@ -1,8 +1,12 @@
 import { Response, Request } from "express";
 import { Redis } from "ioredis";
 
+interface ISession extends Express.Session {
+    userId: number;
+}
+
 interface IRequest extends Request {
-    session: Express.Session;
+    session: ISession;
 }
 
 export type MyContext = {
