@@ -16,6 +16,7 @@ import { pipe, tap } from "wonka";
 import Router from "next/router";
 
 import { betterUpdateQuery } from "./betterUpdateQuery";
+import { isServer } from "./isServer";
 
 export const errorExchange: Exchange = ({ forward }) => (ops$) => {
     return pipe(
@@ -133,12 +134,20 @@ export const cursorPagination = (): Resolver => {
     };
 };
 
-export const createUrqlClient = (ssrExchange: any) => ({
-    url: "http://localhost:4000/graphql",
-    // this is important for cookie data
-    fetchOptions: {
-        credentials: "include" as const
-    },
+export const createUrqlClient = (ssrExchange: any, ctx: any) => {
+
+    return {
+        url: "http://localhost:4000/graphql",
+        // this is important for cookie data
+        fetchOptions: {
+            credentials: "include" as const,
+            // headers: isServer() ? ctx.req.headers.cookie : undefined
+            headers: isServer()
+                ? {
+                      cookie: ctx.req.headers.cookie
+                  }
+                : undefined
+        },
     /**
      * this block of code below will run everytime the login or register
      * mutation runs and it's purpose is to update the cache.

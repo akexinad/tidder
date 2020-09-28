@@ -16,7 +16,7 @@ export const NavBar: FC = () => {
 
     if (fetching) {
         // data is loading
-    } else if (!data.me) {
+    } else if (!data?.me) {
         // user is not logged in
         body = (
             <>
