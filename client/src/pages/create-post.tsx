@@ -11,7 +11,7 @@ import { useCreatePostMutation } from "../generated/graphql";
 
 import { InputField } from "../components/InputField";
 import { Wrapper } from "../components/Wrapper";
-import Layout from "../components/Layout";
+import { Layout } from "../components/Layout";
 
 const CreatePost: FC = () => {
     useIsAuth();
