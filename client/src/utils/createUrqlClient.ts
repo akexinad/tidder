@@ -148,73 +148,92 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                   }
                 : undefined
         },
-    /**
-     * this block of code below will run everytime the login or register
-     * mutation runs and it's purpose is to update the cache.
-     *
-     * In particular we are updating the me query and placing the correct
-     * user inside of there.
-     */
-    exchanges: [
-        dedupExchange,
-        cacheExchange({
-            keys: {
-                PaginatedPosts: () => null
-            },
-            resolvers: {
-                Query: {
-                    posts: cursorPagination()
-                }
-            },
-            updates: {
-                Mutation: {
-                    logout: (_result, _, cache, __) => {
-                        // return null for the me query when the user is logged out
-                        betterUpdateQuery<LogoutMutation, MeQuery>(
-                            cache,
-                            { query: MeDocument },
-                            _result,
-                            () => ({ me: null })
-                        );
-                    },
-                    login: (_result, _, cache, __) => {
-                        betterUpdateQuery<LoginMutation, MeQuery>(
-                            cache,
-                            { query: MeDocument },
-                            _result,
-                            (result, query) => {
-                                if (result.login.errors) {
-                                    return query;
-                                } else {
-                                    return {
-                                        me: result.login.user
-                                    };
-                                }
-                            }
-                        );
-                    },
+        /**
+         * this block of code below will run everytime the login or register
+         * mutation runs and it's purpose is to update the cache.
+         *
+         * In particular we are updating the me query and placing the correct
+         * user inside of there.
+         */
+        exchanges: [
+            dedupExchange,
+            cacheExchange({
+                keys: {
+                    PaginatedPosts: () => null
+                },
+                resolvers: {
+                    Query: {
+                        posts: cursorPagination()
+                    }
+                },
+                updates: {
+                    Mutation: {
+                        /**
+                         * Updates the post list when user creates a new post
+                         */
+                        createPost: (_, __, cache, ___) => {
+                            const POSTS = "posts";
+                            const QUERY = "Query";
 
-                    register: (_result, _, cache, __) => {
-                        betterUpdateQuery<RegisterMutation, MeQuery>(
-                            cache,
-                            { query: MeDocument },
-                            _result,
-                            (result, query) => {
-                                if (result.register.errors) {
-                                    return query;
-                                } else {
-                                    return {
-                                        me: result.register.user
-                                    };
+                            const allFields = cache.inspectFields("Query");
+                            const fieldInfos = allFields.filter(
+                                (info) => info.fieldName === POSTS
+                            );
+
+                            fieldInfos.forEach((field) => {
+                                cache.invalidate(QUERY, POSTS, field.arguments || {});
+                            });
+                        },
+
+                        logout: (result, _, cache, __) => {
+                            // return null for the me query when the user is logged out
+                            betterUpdateQuery<LogoutMutation, MeQuery>(
+                                cache,
+                                { query: MeDocument },
+                                result,
+                                () => ({ me: null })
+                            );
+                        },
+
+                        login: (result, _, cache, __) => {
+                            betterUpdateQuery<LoginMutation, MeQuery>(
+                                cache,
+                                { query: MeDocument },
+                                result,
+                                (result, query) => {
+                                    if (result.login.errors) {
+                                        return query;
+                                    } else {
+                                        return {
+                                            me: result.login.user
+                                        };
+                                    }
                                 }
-                            }
-                        );
+                            );
+                        },
+
+                        register: (result, _, cache, __) => {
+                            betterUpdateQuery<RegisterMutation, MeQuery>(
+                                cache,
+                                { query: MeDocument },
+                                result,
+                                (result, query) => {
+                                    if (result.register.errors) {
+                                        return query;
+                                    } else {
+                                        return {
+                                            me: result.register.user
+                                        };
+                                    }
+                                }
+                            );
+                        }
                     }
                 }
-            }
-        }),
-        errorExchange,
-        ssrExchange,
-        fetchExchange
-    ]
-});
+            }),
+            errorExchange,
+            ssrExchange,
+            fetchExchange
+        ]
+    };
+};
