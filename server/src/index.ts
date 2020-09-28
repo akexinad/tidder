@@ -14,6 +14,7 @@ import { POSTGRES_PASS } from "./priv";
 
 import { Post } from "./entities/Post";
 import { User } from "./entities/User";
+import { Updoot } from "./entities/Updoot";
 
 import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
@@ -28,7 +29,7 @@ const main = async () => {
         logging: true,
         migrations: [path.join(__dirname, "./migrations/*")],
         synchronize: true, // this prop will set up your schema automatically when set to true.
-        entities: [Post, User]
+        entities: [Post, User, Updoot]
     });
 
     // await Post.delete({});

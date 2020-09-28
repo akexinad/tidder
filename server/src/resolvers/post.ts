@@ -18,6 +18,7 @@ import { getConnection } from "typeorm";
 import { MyContext } from "../types";
 
 import { isAuth } from "../middleware/isAuth";
+import { Updoot } from "../entities/Updoot";
 
 @InputType()
 class PostInput {
@@ -44,13 +45,52 @@ export class PostResolver {
      */
     @FieldResolver(() => String)
     textSnippet(@Root() root: Post) {
-        return root.text.slice(0, 50) + "...";
+        const sliced = root.text.slice(0, 50);
+
+        return root.text.length > 50 ? sliced + "..." : sliced;
+    }
+
+    @Mutation(() => Boolean)
+    @UseMiddleware(isAuth)
+    async vote(
+        @Arg("postId", () => Int) postId: number,
+        @Arg("value", () => Int) value: number,
+        @Ctx() { req }: MyContext
+    ): Promise<boolean> {
+        const { userId } = req.session;
+
+        const isUpdoot = value !== -1;
+        const realValue = isUpdoot ? 1 : -1;
+
+        const postToUpdate = await Post.findOne(postId);
+
+        if (!postToUpdate) {
+            console.error("404: Post Not Found");
+            return false;
+        }
+
+        await Updoot.insert({
+            userId,
+            postId,
+            value: realValue
+        }).catch((error) => {
+            console.error("Error Inserting Updoot", error);
+        });
+
+        await Post.update(
+            { id: postId },
+            { points: postToUpdate.points + realValue }
+        ).catch((error) => {
+            console.error("Error Updating Post", error);
+        });
+
+        return true;
     }
 
     @Query(() => PaginatedPosts)
     async posts(
         @Arg("limit", () => Int) limit: number,
-        @Arg("cursor", () => String, { nullable: true }) cursor: string,
+        @Arg("cursor", () => String, { nullable: true }) cursor: string
     ): Promise<PaginatedPosts> {
         // caps the limit at 50
         const realLimit = Math.min(50, limit);

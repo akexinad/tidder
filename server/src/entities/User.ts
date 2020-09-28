@@ -9,6 +9,7 @@ import {
 } from "typeorm";
 
 import { Post } from "./Post";
+import { Updoot } from "./Updoot";
 
 /**
  * the @ObjectType() tells type graphql to
@@ -35,9 +36,12 @@ export class User extends BaseEntity {
     @Column()
     password!: string;
 
-    @OneToMany(() => Post, post => post.author)
+    @OneToMany(() => Post, (post) => post.author)
     posts: Array<Post>;
-    
+
+    @OneToMany(() => Updoot, (updoot) => updoot.user)
+    updoots: Array<Updoot>;
+
     // Adding the field decortor will expose the property to graphql
     @Field()
     @CreateDateColumn()
