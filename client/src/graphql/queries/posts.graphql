@@ -10,6 +10,10 @@ query Posts($limit: Int!, $cursor: String) {
       updatedAt
       authorId
       points
+      author {
+        id
+        username
+      }
     }
   }
 }

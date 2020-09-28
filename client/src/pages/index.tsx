@@ -2,12 +2,12 @@ import { Box, Button, Flex, Heading, Link, Stack, Text } from "@chakra-ui/core";
 import { withUrqlClient } from "next-urql";
 import NextLink from "next/link";
 import React, { useState } from "react";
-import Layout from "../components/Layout";
+import { Layout } from "../components/Layout";
 import { usePostsQuery } from "../generated/graphql";
 import { createUrqlClient } from "../utils/createUrqlClient";
 
 const Index = () => {
-    const [variables, setVariables] = useState({ limit: 50, cursor: null });
+    const [variables, setVariables] = useState({ limit: 15, cursor: null });
 
     const [{ data, fetching }] = usePostsQuery({
         variables
@@ -31,8 +31,9 @@ const Index = () => {
             ) : (
                 <Stack mb={10} spacing={8}>
                     {data.posts.posts.map((p) => (
-                        <Box key={p.id} p={5} shadow="md" borderWidth="1px">
-                            <Heading fontSize="xl">{p.title}</Heading>
+                        <Box key={p.id} p={5} shadow="md" borderWidth="1px" borderRadius={10}>
+                            <Heading fontSize="xl">{p.title}</Heading>{" "}
+                            <Text>Posted by <strong>{p.author.username}</strong></Text>
                             <Text mt={4}>{p.textSnippet}</Text>
                         </Box>
                     ))}
@@ -45,8 +46,9 @@ const Index = () => {
                             setVariables({
                                 limit: variables.limit,
                                 cursor:
-                                    data.posts.posts[data.posts.posts.length - 1]
-                                        .createdAt
+                                    data.posts.posts[
+                                        data.posts.posts.length - 1
+                                    ].createdAt
                             })
                         }
                         isLoading={fetching}
