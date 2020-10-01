@@ -27,6 +27,13 @@ export class Post extends BaseEntity {
     @Column()
     title!: string;
 
+    /**
+     * This will only be a graphql value
+     * not a column in the db.
+     */
+    @Field(() => Int, { nullable: true })
+    voteStatus: number | null;
+
     @Field()
     @Column()
     text!: string;
