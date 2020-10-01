@@ -1,20 +1,21 @@
-import { cacheExchange, Resolver } from "@urql/exchange-graphcache";
+import { cacheExchange, Data, Resolver } from "@urql/exchange-graphcache";
+import gql from "graphql-tag";
+import Router from "next/router";
 import {
     dedupExchange,
     Exchange,
     fetchExchange,
     stringifyVariables
 } from "urql";
-import {
-    LogoutMutation,
-    MeQuery,
-    MeDocument,
-    LoginMutation,
-    RegisterMutation
-} from "../generated/graphql";
 import { pipe, tap } from "wonka";
-import Router from "next/router";
-
+import {
+    LoginMutation,
+    LogoutMutation,
+    MeDocument,
+    MeQuery,
+    RegisterMutation,
+    VoteMutationVariables
+} from "../generated/graphql";
 import { betterUpdateQuery } from "./betterUpdateQuery";
 import { isServer } from "./isServer";
 
@@ -135,7 +136,6 @@ export const cursorPagination = (): Resolver => {
 };
 
 export const createUrqlClient = (ssrExchange: any, ctx: any) => {
-
     return {
         url: "http://localhost:4000/graphql",
         // this is important for cookie data
@@ -168,6 +168,61 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                 },
                 updates: {
                     Mutation: {
+                        vote: (_, args, cache, __) => {
+                            const {
+                                postId,
+                                value
+                            } = args as VoteMutationVariables;
+                            const data = cache.readFragment(
+                                gql`
+                                    fragment _ on Post {
+                                        id
+                                        points
+                                        voteStatus
+                                    }
+                                `,
+                                { id: postId } as Data
+                            );
+
+                            if (data) {
+                                if (data.voteStatus === value) {
+                                    return cache.writeFragment(
+                                        gql`
+                                            fragment __ on Post {
+                                                points
+                                                voteStatus
+                                            }
+                                        `,
+                                        {
+                                            id: postId,
+                                            points: 0,
+                                            voteStatus: null,
+                                            __typename: "Post"
+                                        } as Data
+                                    );
+                                }
+
+                                const newPoints =
+                                    +data.points +
+                                    (!data.voteStatus ? 1 : 2) * value;
+
+                                cache.writeFragment(
+                                    gql`
+                                        fragment _ on Post {
+                                            points
+                                            voteStatus
+                                        }
+                                    `,
+                                    {
+                                        id: postId,
+                                        points: newPoints,
+                                        voteStatus: value,
+                                        __typename: "Post"
+                                    } as Data
+                                );
+                            }
+                        },
+
                         /**
                          * Updates the post list when user creates a new post
                          */
@@ -180,8 +235,15 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                                 (info) => info.fieldName === POSTS
                             );
 
+                            /**
+                             * We need to invalidate all the queries
+                             */
                             fieldInfos.forEach((field) => {
-                                cache.invalidate(QUERY, POSTS, field.arguments || {});
+                                cache.invalidate(
+                                    QUERY,
+                                    POSTS,
+                                    field.arguments || {}
+                                );
                             });
                         },
 
