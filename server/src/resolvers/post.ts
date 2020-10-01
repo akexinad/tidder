@@ -125,7 +125,8 @@ export class PostResolver {
     @Query(() => PaginatedPosts)
     async posts(
         @Arg("limit", () => Int) limit: number,
-        @Arg("cursor", () => String, { nullable: true }) cursor: string
+        @Arg("cursor", () => String, { nullable: true }) cursor: string,
+        @Ctx() { req }: MyContext
     ): Promise<PaginatedPosts> {
         // caps the limit at 50
         const realLimit = Math.min(50, limit);
@@ -155,7 +156,7 @@ export class PostResolver {
          * leftAndInnerJoin function, it all works normally without
          * having to use your own sql query as ben did above.
          *
-         * However this might, idk yet.
+         * However this might not work, idk yet.
          */
 
         const qb = getConnection()
@@ -175,6 +176,26 @@ export class PostResolver {
 
         const posts = await qb.getMany();
 
+        const updoots = await Updoot.find();
+
+        /**
+         * checking if user has already updooted certain posts
+         */
+
+        posts.map((post) => {
+            const updooted = updoots.find(
+                (updoot) =>
+                    updoot.postId === post.id &&
+                    updoot.userId === req.session.userId
+            );
+
+            if (updooted) {
+                post.voteStatus = updooted.value;
+            }
+
+            return post;
+        });
+
         return {
             posts: posts.slice(0, realLimit),
             hasMore: posts.length === realLimitPlusOne
@@ -182,10 +203,7 @@ export class PostResolver {
     }
 
     @Query(() => Post, { nullable: true })
-    // post(@Arg("id", () => Int) id: number): Promise<Post | undefined> {
     async post(@Arg("id", () => Int) id: number): Promise<Post | null> {
-        // return Post.findOne(id);
-
         const post = await getConnection()
             .getRepository(Post)
             .createQueryBuilder("post")
