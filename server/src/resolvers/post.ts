@@ -69,13 +69,48 @@ export class PostResolver {
             return false;
         }
 
-        await Updoot.insert({
+        const updoot = await Updoot.findOne({ where: { userId, postId } });
+
+        /**
+         * the user has voted and is trying to vote
+         * and are changing their vote
+         */
+        if (updoot && updoot.value !== realValue) {
+            await Updoot.update({ postId }, { value: realValue });
+            await Post.update(
+                { id: postId },
+                { points: postToUpdate.points + realValue * 2 }
+            );
+            return true;
+        }
+
+        /**
+         * To make it a little more like reddit. If the user upvoted and
+         * hits the upvote button again, it deletes their upvote.
+         */
+        if (updoot && updoot.value === realValue) {
+            await Updoot.delete({ postId });
+            await Post.update(
+                { id: postId },
+                { points: postToUpdate.points - realValue }
+            );
+            return true;
+        }
+
+        /**
+         * Create a new updoot!
+         */
+        const newUpdoot = await Updoot.insert({
             userId,
             postId,
             value: realValue
         }).catch((error) => {
             console.error("Error Inserting Updoot", error);
         });
+
+        if (!newUpdoot) {
+            return false;
+        }
 
         await Post.update(
             { id: postId },
