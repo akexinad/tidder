@@ -1,12 +1,4 @@
-import {
-    Box,
-    Button,
-    Flex,
-    Heading,
-    Link,
-    Stack,
-    Text
-} from "@chakra-ui/core";
+import { Box, Button, Flex, Heading, Link, Stack, Text } from "@chakra-ui/core";
 import { withUrqlClient } from "next-urql";
 import NextLink from "next/link";
 import React, { useState } from "react";
@@ -49,7 +41,16 @@ const Index = () => {
                         >
                             <UpdootSection post={post} />
                             <Box>
-                                <Heading fontSize="xl">{post.title}</Heading>{" "}
+                                <NextLink
+                                    href={`/post/[id]`}
+                                    as={`/post/${post.id}`}
+                                >
+                                    <Link>
+                                        <Heading fontSize="xl">
+                                            {post.title}
+                                        </Heading>{" "}
+                                    </Link>
+                                </NextLink>
                                 <Text>
                                     Posted by{" "}
                                     <strong>{post.author.username}</strong>

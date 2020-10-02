@@ -48,6 +48,11 @@ export const NavBar: FC = () => {
 
     return (
         <Flex position="sticky" top={0} zIndex={1} bg="tomato" p={4}>
+            <NextLink href="/">
+                <Link>
+                    <strong>TiDDER</strong>
+                </Link>
+            </NextLink>
             <Box ml="auto">{body}</Box>
         </Flex>
     );
