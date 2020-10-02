@@ -204,12 +204,14 @@ export class PostResolver {
 
     @Query(() => Post, { nullable: true })
     async post(@Arg("id", () => Int) id: number): Promise<Post | null> {
-        const post = await getConnection()
-            .getRepository(Post)
-            .createQueryBuilder("post")
-            .leftJoinAndSelect("post.author", "user")
-            .where(`post.id = ${id}`)
-            .getOne();
+        // const post = await getConnection()
+        //     .getRepository(Post)
+        //     .createQueryBuilder("post")
+        //     .leftJoinAndSelect("post.author", "user")
+        //     .where(`post.id = ${id}`)
+        //     .getOne();
+
+        const post = await Post.findOne(id, { relations: ["author"] });
 
         if (post === undefined) {
             console.error("There was error getting a single post");
