@@ -25,7 +25,7 @@ export class Updoot extends BaseEntity {
     @Field()
     @Column({ type: "int" })
     value: number;
-    
+
     @Field()
     @PrimaryColumn()
     userId: number;
@@ -41,4 +41,9 @@ export class Updoot extends BaseEntity {
     @Field(() => Post)
     @ManyToOne(() => Post, (post) => post.updoots)
     post: Post;
+    
+    // This is how you cascade delete
+    // @ManyToOne(() => Post, (post) => post.updoots, {
+    //     onDelete: "CASCADE"
+    // })
 }
