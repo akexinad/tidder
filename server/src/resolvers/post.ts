@@ -237,23 +237,6 @@ export class PostResolver {
         }).save();
     }
 
-    @Mutation(() => Post, { nullable: true })
-    async editPost(
-        @Arg("id") id: number,
-        @Arg("title", () => String, { nullable: true }) title: string
-    ): Promise<Post | undefined> {
-        const post = await Post.findOne(id);
-
-        if (!post) return undefined;
-
-        // in the case that they don't provide a new title
-        if (typeof title !== undefined) {
-            await Post.update({ id }, { title });
-        }
-
-        return post;
-    }
-
     @Mutation(() => Boolean)
     @UseMiddleware(isAuth)
     async deletePost(
@@ -267,9 +250,6 @@ export class PostResolver {
             return false;
         }
 
-        console.log('post.authorId', post.authorId)
-        console.log('req.session.userId', req.session.userId)
-
         if (post.authorId !== req.session.userId) {
             console.error("403: Unauthorized to delete this post");
             return false;
@@ -280,5 +260,57 @@ export class PostResolver {
         await Post.delete({ id });
 
         return true;
+    }
+
+    @Mutation(() => Post, { nullable: true })
+    @UseMiddleware(isAuth)
+    async updatePost(
+        @Arg("id", () => Int) id: number,
+        @Arg("title") title: string,
+        @Arg("text") text: string,
+        @Ctx() { req }: MyContext
+    ): Promise<Post | null> {
+        const post = await Post.findOne(id);
+
+        if (!post) {
+            console.error("404: Post Not Found!");
+            return null;
+        }
+
+        if (post.authorId !== req.session.userId) {
+            console.error("403: Unauthorized to update this post");
+            return null;
+        }
+
+        /**
+         * 
+        This is how you would do it with the query builder.
+        
+        await getConnection()
+        .createQueryBuilder()
+        .update(Post)
+        .set({ 
+            title,
+            text
+        })
+        .where("id = :id and 'authorId' = :authorId", { id, authorId: req.session.userId })
+        .returning("*")
+        .execute();
+
+        */
+
+        await Post.update(
+            { id },
+            { title: title ? title : post.title, text: text ? text : post.text }
+        );
+
+        const updatedPost = await Post.findOne(id);
+
+        if (!updatedPost) {
+            console.error("404: Updated Post Not Found!");
+            return null;
+        }
+
+        return updatedPost;
     }
 }
