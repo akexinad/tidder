@@ -1,10 +1,19 @@
-import { Box, Button, Flex, Heading, Link, Stack, Text } from "@chakra-ui/core";
+import {
+    Box,
+    Button,
+    Flex,
+    Heading,
+    IconButton,
+    Link,
+    Stack,
+    Text
+} from "@chakra-ui/core";
 import { withUrqlClient } from "next-urql";
 import NextLink from "next/link";
 import React, { useState } from "react";
 import { Layout } from "../components/Layout";
 import UpdootSection from "../components/UpdootSection";
-import { usePostsQuery } from "../generated/graphql";
+import { useDeletePostMutation, usePostsQuery } from "../generated/graphql";
 import { createUrqlClient } from "../utils/createUrqlClient";
 
 const Index = () => {
@@ -13,6 +22,8 @@ const Index = () => {
     const [{ data, fetching }] = usePostsQuery({
         variables
     });
+
+    const [, deletePost] = useDeletePostMutation();
 
     if (!fetching && !data) {
         return <div>query failed. Check network tab.</div>;
@@ -24,34 +35,54 @@ const Index = () => {
                 <div>loading...</div>
             ) : (
                 <Stack mb={10} spacing={8}>
-                    {data.posts.posts.map((post) => (
-                        <Flex
-                            key={post.id}
-                            p={5}
-                            shadow="md"
-                            borderWidth="1px"
-                            borderRadius={10}
-                        >
-                            <UpdootSection post={post} />
-                            <Box>
-                                <NextLink
-                                    href={`/post/[id]`}
-                                    as={`/post/${post.id}`}
-                                >
-                                    <Link>
-                                        <Heading fontSize="xl">
-                                            {post.title}
-                                        </Heading>{" "}
-                                    </Link>
-                                </NextLink>
-                                <Text>
-                                    Posted by{" "}
-                                    <strong>{post.author.username}</strong>
-                                </Text>
-                                <Text mt={4}>{post.textSnippet}</Text>
-                            </Box>
-                        </Flex>
-                    ))}
+                    {/* 
+                        After deleting posts and invalidating them in the cache, what
+                        will happen now is that some posts may return as null. Therefore,
+                        we need to check for null posts.
+                     */}
+                    {data.posts.posts.map((post) =>
+                        !post ? null : (
+                            <Flex
+                                key={post.id}
+                                p={5}
+                                shadow="md"
+                                borderWidth="1px"
+                                borderRadius={10}
+                            >
+                                <UpdootSection post={post} />
+                                <Box flex={1}>
+                                    <NextLink
+                                        href={`/post/[id]`}
+                                        as={`/post/${post.id}`}
+                                    >
+                                        <Link>
+                                            <Heading fontSize="xl">
+                                                {post.title}
+                                            </Heading>{" "}
+                                        </Link>
+                                    </NextLink>
+                                    <Text>
+                                        Posted by{" "}
+                                        <strong>{post.author.username}</strong>
+                                    </Text>
+                                    <Flex align="center">
+                                        <Text flex={1} mt={4}>
+                                            {post.textSnippet}
+                                        </Text>
+                                        <IconButton
+                                            ml="auto"
+                                            variantColor="red"
+                                            icon="delete"
+                                            aria-label="delete post"
+                                            onClick={() =>
+                                                deletePost({ id: post.id })
+                                            }
+                                        />
+                                    </Flex>
+                                </Box>
+                            </Flex>
+                        )
+                    )}
                 </Stack>
             )}
             {data && data.posts.hasMore ? (
