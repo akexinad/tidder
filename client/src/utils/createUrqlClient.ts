@@ -147,12 +147,12 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
             credentials: "include" as const,
             headers: isServer()
                 ? {
-                      cookie: ctx.req.headers.cookie
+                      cookie: ctx?.req?.headers.cookie
                   }
                 : undefined
         },
         /**
-         * this block of code below will run everytime the login or register
+         * This block of code below will run everytime the login or register
          * mutation runs and it's purpose is to update the cache.
          *
          * In particular we are updating the me query and placing the correct
