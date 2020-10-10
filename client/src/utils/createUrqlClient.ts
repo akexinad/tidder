@@ -9,6 +9,7 @@ import {
 } from "urql";
 import { pipe, tap } from "wonka";
 import {
+    DeletePostMutationVariables,
     LoginMutation,
     LogoutMutation,
     MeDocument,
@@ -16,8 +17,11 @@ import {
     RegisterMutation,
     VoteMutationVariables
 } from "../generated/graphql";
+import { LoggedInUserData, PostToDeleteData } from "../types";
 import { betterUpdateQuery } from "./betterUpdateQuery";
 import { isServer } from "./isServer";
+
+const POST_TYPENAME = "Post";
 
 export const errorExchange: Exchange = ({ forward }) => (ops$) => {
     return pipe(
@@ -141,7 +145,6 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
         // this is important for cookie data
         fetchOptions: {
             credentials: "include" as const,
-            // headers: isServer() ? ctx.req.headers.cookie : undefined
             headers: isServer()
                 ? {
                       cookie: ctx.req.headers.cookie
@@ -168,6 +171,47 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                 },
                 updates: {
                     Mutation: {
+                        deletePost: (_, args, cache, __) => {
+                            const deletePostArgs = args as DeletePostMutationVariables;
+
+                            /**
+                             * We do not want to delete the posts that do not 
+                             * belong to the user.
+                             */
+                            
+                            const loggedInUserData = cache.readQuery({
+                                query: gql`
+                                    query Me {
+                                        me {
+                                            id
+                                        }
+                                    }
+                                `
+                            }) as LoggedInUserData;
+
+                            const postToDeleteData = cache.readFragment(
+                                gql`
+                                    fragment _ on Post {
+                                        author {
+                                            id
+                                        }
+                                    }
+                                `,
+                                { id: deletePostArgs.id } as Data
+                            ) as PostToDeleteData;
+
+                            if (
+                                loggedInUserData.me.id !==
+                                postToDeleteData.author.id
+                            ) {
+                                return;
+                            }
+
+                            cache.invalidate({
+                                __typename: POST_TYPENAME,
+                                id: deletePostArgs.id
+                            });
+                        },
                         vote: (_, args, cache, __) => {
                             const {
                                 postId,
@@ -197,7 +241,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                                             id: postId,
                                             points: 0,
                                             voteStatus: null,
-                                            __typename: "Post"
+                                            __typename: POST_TYPENAME
                                         } as Data
                                     );
                                 }
@@ -217,7 +261,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                                         id: postId,
                                         points: newPoints,
                                         voteStatus: value,
-                                        __typename: "Post"
+                                        __typename: POST_TYPENAME
                                     } as Data
                                 );
                             }
