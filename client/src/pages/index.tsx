@@ -20,13 +20,6 @@ const Index = () => {
 
     return (
         <Layout>
-            <Flex>
-                <Heading>TiDDER</Heading>
-                <NextLink href="/create-post">
-                    <Link m="auto 0 auto auto">create post</Link>
-                </NextLink>
-            </Flex>
-            <br />
             {fetching && !data ? (
                 <div>loading...</div>
             ) : (

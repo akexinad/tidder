@@ -31,7 +31,13 @@ export const NavBar: FC = () => {
     } else {
         // user is logged in
         body = (
-            <Flex>
+            <Flex align="center">
+                <NextLink href="/create-post">
+                    <Button as={Link} mr={4}>
+                        create post
+                    </Button>
+                </NextLink>
+
                 <Box mr={4}>{data.me.username}</Box>
                 <Button
                     variant="link"
@@ -48,12 +54,14 @@ export const NavBar: FC = () => {
 
     return (
         <Flex position="sticky" top={0} zIndex={1} bg="tomato" p={4}>
-            <NextLink href="/">
-                <Link>
-                    <strong>TiDDER</strong>
-                </Link>
-            </NextLink>
-            <Box ml="auto">{body}</Box>
+            <Flex maxW={800} flex={1} align="center" m="auto">
+                <NextLink href="/">
+                    <Link>
+                        <strong>TiDDER</strong>
+                    </Link>
+                </NextLink>
+                <Box ml="auto">{body}</Box>
+            </Flex>
         </Flex>
     );
 };
