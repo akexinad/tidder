@@ -1,0 +1,6 @@
+mutation DeletePost($id: Int!) {
+  deletePost(id: $id)
+}
+
+# When returning a boolean there is no need
+# select any fields.
