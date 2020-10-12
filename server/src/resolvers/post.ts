@@ -19,6 +19,7 @@ import { MyContext } from "../types";
 
 import { isAuth } from "../middleware/isAuth";
 import { Updoot } from "../entities/Updoot";
+import { User } from "../entities/User";
 
 @InputType()
 class PostInput {
@@ -48,6 +49,54 @@ export class PostResolver {
         const sliced = root.text.slice(0, 50);
 
         return root.text.length > 50 ? sliced + "..." : sliced;
+    }
+
+    /**
+     * This solution to fetching relations is very poor on performance.
+     *
+     * It is advised that you use the 'DataLoader' library if you wish to use
+     * these FieldResolver to fetch your relational data.
+     */
+
+    @FieldResolver(() => User)
+    author(@Root() post: Post, @Ctx() { userLoader }: MyContext) {
+        // return User.findOne(post.authorId);
+
+        /**
+         * instead of returning a user for every single post, we use the
+         * userLoader to return the unique users only once.
+         */
+
+        return userLoader.load(post.authorId);
+    }
+
+    /**
+     * Another example with using loaders to batch our requests to the db.
+     */
+
+    /**
+     * This example really didn't work that well.
+     */
+
+    @FieldResolver(() => Int, { nullable: true })
+    async voteStatus(
+        @Root() post: Post,
+        @Ctx() { updootLoader, req }: MyContext
+    ) {
+        /**
+         * By not being logged in we can state that
+         * the user does not have a vote status.
+         */
+        if (!req.session.userId) {
+            return null;
+        }
+
+        const updoot = await updootLoader.load({
+            postId: post.id,
+            userId: req.session.userId
+        });
+
+        return updoot ? updoot.value : null;
     }
 
     @Mutation(() => Boolean)
@@ -125,8 +174,7 @@ export class PostResolver {
     @Query(() => PaginatedPosts)
     async posts(
         @Arg("limit", () => Int) limit: number,
-        @Arg("cursor", () => String, { nullable: true }) cursor: string,
-        @Ctx() { req }: MyContext
+        @Arg("cursor", () => String, { nullable: true }) cursor: string
     ): Promise<PaginatedPosts> {
         // caps the limit at 50
         const realLimit = Math.min(50, limit);
@@ -155,8 +203,6 @@ export class PostResolver {
          * correctly. here if we just use the entity name and the
          * leftAndInnerJoin function, it all works normally without
          * having to use your own sql query as ben did above.
-         *
-         * However this might not work, idk yet.
          */
 
         const qb = getConnection()
@@ -166,7 +212,13 @@ export class PostResolver {
              * we need to use double quotations here so
              * postgresql knows what column to look for.
              */
-            .leftJoinAndSelect("post.author", "user")
+
+            /**
+             * With the new author FieldResolver above, the User
+             * will automatically be returned for us
+             */
+
+            // .leftJoinAndSelect("post.author", "user")
             .orderBy("post.createdAt", "DESC")
             .take(realLimitPlusOne);
 
@@ -176,25 +228,32 @@ export class PostResolver {
 
         const posts = await qb.getMany();
 
-        const updoots = await Updoot.find();
+        /**
+         * NOTE!!!
+         *
+         * With the new upvote FielResolver that utilises
+         * the DataLoader, we do not need this logic below anymore.
+         */
+
+        // const updoots = await Updoot.find();
 
         /**
          * checking if user has already updooted certain posts
          */
 
-        posts.map((post) => {
-            const updooted = updoots.find(
-                (updoot) =>
-                    updoot.postId === post.id &&
-                    updoot.userId === req.session.userId
-            );
+        // posts.map((post) => {
+        //     const updooted = updoots.find(
+        //         (updoot) =>
+        //             updoot.postId === post.id &&
+        //             updoot.userId === req.session.userId
+        //     );
 
-            if (updooted) {
-                post.voteStatus = updooted.value;
-            }
+        //     if (updooted) {
+        //         post.voteStatus = updooted.value;
+        //     }
 
-            return post;
-        });
+        //     return post;
+        // });
 
         return {
             posts: posts.slice(0, realLimit),
@@ -211,7 +270,15 @@ export class PostResolver {
         //     .where(`post.id = ${id}`)
         //     .getOne();
 
-        const post = await Post.findOne(id, { relations: ["author"] });
+        // const post = await Post.findOne(id, {
+        //     relations: ["author"]
+        // });
+
+        /**
+         * With the new author FieldResolver above, the User
+         * will automatically be returned for us
+         */
+        const post = await Post.findOne(id);
 
         if (post === undefined) {
             console.error("There was error getting a single post");
