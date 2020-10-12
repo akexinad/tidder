@@ -1,4 +1,3 @@
-import { Post } from "../entities/Post";
 import {
     Arg,
     Ctx,
@@ -14,12 +13,11 @@ import {
     UseMiddleware
 } from "type-graphql";
 import { getConnection } from "typeorm";
-
-import { MyContext } from "../types";
-
-import { isAuth } from "../middleware/isAuth";
+import { Post } from "../entities/Post";
 import { Updoot } from "../entities/Updoot";
 import { User } from "../entities/User";
+import { isAuth } from "../middleware/isAuth";
+import { MyContext } from "../types";
 
 @InputType()
 class PostInput {
@@ -115,25 +113,17 @@ export class PostResolver {
             return false;
         }
 
-        console.log('userId', userId)
-        console.log('postId', postId)
-
         const updoot = await Updoot.findOne({ where: { postId, userId } });
 
         if (!updoot) {
-            console.error("404: Updoot not found!")
+            console.error("404: Updoot not found!");
         }
 
-        console.log('THE UPDOOT \n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', updoot)
-
         /**
-         * The user wants to remove their vote, 
+         * The user wants to remove their vote,
          * which means we need to delete the updoot.
          */
         if (updoot && value === updoot.value) {
-            console.log("YOU ARE HERE");
-            
-            
             /**
              * Add a point if user's vote was initially negative,
              * and vice versa.
@@ -155,7 +145,7 @@ export class PostResolver {
          */
         if (updoot && value !== updoot.value) {
             const newValue = value * 2;
-            
+
             await Updoot.update({ postId, userId }, { value });
             await Post.update(
                 { id: postId },

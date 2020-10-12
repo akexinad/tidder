@@ -18,7 +18,7 @@ import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 import { createUpdootLoader } from "./utils/createUpdootLoader";
 import { createUserLoader } from "./utils/createUserLoader";
-import { resetAllPostPoints } from "./utils/resetAllPostPoints";
+// import { resetAllPostPoints } from "./utils/resetAllPostPoints";
 
 const main = async () => {
     await createConnection({
