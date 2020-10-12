@@ -18,6 +18,7 @@ import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 import { createUpdootLoader } from "./utils/createUpdootLoader";
 import { createUserLoader } from "./utils/createUserLoader";
+import { resetAllPostPoints } from "./utils/resetAllPostPoints";
 
 const main = async () => {
     await createConnection({
@@ -33,6 +34,8 @@ const main = async () => {
 
     // await Post.delete({});
     // await User.delete({});
+
+    // await resetAllPostPoints();
 
     // await connection.runMigrations();
 
