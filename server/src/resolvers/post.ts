@@ -108,9 +108,6 @@ export class PostResolver {
     ): Promise<boolean> {
         const { userId } = req.session;
 
-        const isUpdoot = value !== -1;
-        const realValue = isUpdoot ? 1 : -1;
-
         const postToUpdate = await Post.findOne(postId);
 
         if (!postToUpdate) {
@@ -118,52 +115,70 @@ export class PostResolver {
             return false;
         }
 
-        const updoot = await Updoot.findOne({ where: { userId, postId } });
+        console.log('userId', userId)
+        console.log('postId', postId)
+
+        const updoot = await Updoot.findOne({ where: { postId, userId } });
+
+        if (!updoot) {
+            console.error("404: Updoot not found!")
+        }
+
+        console.log('THE UPDOOT \n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', updoot)
 
         /**
-         * the user has voted and is trying to vote
-         * and are changing their vote
+         * The user wants to remove their vote, 
+         * which means we need to delete the updoot.
          */
-        if (updoot && updoot.value !== realValue) {
-            await Updoot.update({ postId }, { value: realValue });
+        if (updoot && value === updoot.value) {
+            console.log("YOU ARE HERE");
+            
+            
+            /**
+             * Add a point if user's vote was initially negative,
+             * and vice versa.
+             */
+            const newValue = value === -1 ? 1 : -1;
+
+            await Updoot.delete({ userId, postId });
+
             await Post.update(
                 { id: postId },
-                { points: postToUpdate.points + realValue * 2 }
+                { points: postToUpdate.points + newValue }
             );
+
             return true;
         }
 
         /**
-         * To make it a little more like reddit. If the user upvoted and
-         * hits the upvote button again, it deletes their upvote.
+         * The user is changing their vote from positive to negative and vice versa.
          */
-        if (updoot && updoot.value === realValue) {
-            await Updoot.delete({ postId });
+        if (updoot && value !== updoot.value) {
+            const newValue = value * 2;
+            
+            await Updoot.update({ postId, userId }, { value });
             await Post.update(
                 { id: postId },
-                { points: postToUpdate.points - realValue }
+                { points: postToUpdate.points + newValue }
             );
+
             return true;
         }
 
         /**
          * Create a new updoot!
          */
-        const newUpdoot = await Updoot.insert({
+        await Updoot.insert({
             userId,
             postId,
-            value: realValue
+            value
         }).catch((error) => {
             console.error("Error Inserting Updoot", error);
         });
 
-        if (!newUpdoot) {
-            return false;
-        }
-
         await Post.update(
             { id: postId },
-            { points: postToUpdate.points + realValue }
+            { points: postToUpdate.points + value }
         ).catch((error) => {
             console.error("Error Updating Post", error);
         });
