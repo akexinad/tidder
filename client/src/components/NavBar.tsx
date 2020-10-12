@@ -1,12 +1,15 @@
-import React, { FC } from "react";
+import React, { FC, useEffect } from "react";
 import { Box, Button, Flex, Link } from "@chakra-ui/core";
 import NextLink from "next/link";
 
 import { isServer } from "../utils/isServer";
 
 import { useLogoutMutation, useMeQuery } from "../generated/graphql";
+import { useRouter } from "next/router";
 
 export const NavBar: FC = () => {
+    const router = useRouter();
+    
     const [{ data, fetching }] = useMeQuery({
         pause: isServer()
     });
@@ -41,8 +44,14 @@ export const NavBar: FC = () => {
                 <Box mr={4}>{data.me.username}</Box>
                 <Button
                     variant="link"
-                    onClick={() => {
-                        logout();
+                    onClick={async () => {
+                        await logout();
+
+                        /**
+                         * This will refresh the entire cache
+                         * everytime when user logs out.
+                         */
+                        router.reload();
                     }}
                     isLoading={logoutFetching}
                 >

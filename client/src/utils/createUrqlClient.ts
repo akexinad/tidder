@@ -1,4 +1,9 @@
-import { cacheExchange, Data, Resolver } from "@urql/exchange-graphcache";
+import {
+    Cache,
+    cacheExchange,
+    Data,
+    Resolver
+} from "@urql/exchange-graphcache";
 import gql from "graphql-tag";
 import Router from "next/router";
 import {
@@ -84,59 +89,22 @@ export const cursorPagination = (): Resolver => {
             posts,
             __typename: "PaginatedPosts"
         };
-
-        //     const visited = new Set();
-        //     let result: NullArray<string> = [];
-        //     let prevOffset: number | null = null;
-
-        //     for (let i = 0; i < size; i++) {
-        //       const { fieldKey, arguments: args } = fieldInfos[i];
-        //       if (args === null || !compareArgs(fieldArgs, args)) {
-        //         continue;
-        //       }
-
-        //       const links = cache.resolveFieldByKey(entityKey, fieldKey) as string[];
-        //       const currentOffset = args[cursorArgument];
-
-        //       if (
-        //         links === null ||
-        //         links.length === 0 ||
-        //         typeof currentOffset !== 'number'
-        //       ) {
-        //         continue;
-        //       }
-
-        //       if (!prevOffset || currentOffset > prevOffset) {
-        //         for (let j = 0; j < links.length; j++) {
-        //           const link = links[j];
-        //           if (visited.has(link)) continue;
-        //           result.push(link);
-        //           visited.add(link);
-        //         }
-        //       } else {
-        //         const tempResult: NullArray<string> = [];
-        //         for (let j = 0; j < links.length; j++) {
-        //           const link = links[j];
-        //           if (visited.has(link)) continue;
-        //           tempResult.push(link);
-        //           visited.add(link);
-        //         }
-        //         result = [...tempResult, ...result];
-        //       }
-
-        //       prevOffset = currentOffset;
-        //     }
-
-        //     const hasCurrentPage = cache.resolve(entityKey, fieldName, fieldArgs);
-        //     if (hasCurrentPage) {
-        //       return result;
-        //     } else if (!(info as any).store.schema) {
-        //       return undefined;
-        //     } else {
-        //       info.partial = true;
-        //       return result;
-        //     }
     };
+};
+
+const invalidateAllPosts = (cache: Cache) => {
+    const POSTS = "posts";
+    const QUERY = "Query";
+
+    const allFields = cache.inspectFields("Query");
+    const fieldInfos = allFields.filter((info) => info.fieldName === POSTS);
+
+    /**
+     * We need to invalidate all the queries
+     */
+    fieldInfos.forEach((field) => {
+        cache.invalidate(QUERY, POSTS, field.arguments || {});
+    });
 };
 
 export const createUrqlClient = (ssrExchange: any, ctx: any) => {
@@ -175,10 +143,10 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                             const deletePostArgs = args as DeletePostMutationVariables;
 
                             /**
-                             * We do not want to delete the posts that do not 
+                             * We do not want to delete the posts that do not
                              * belong to the user.
                              */
-                            
+
                             const loggedInUserData = cache.readQuery({
                                 query: gql`
                                     query Me {
@@ -217,9 +185,10 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                                 postId,
                                 value
                             } = args as VoteMutationVariables;
+
                             const data = cache.readFragment(
                                 gql`
-                                    fragment _ on Post {
+                                    fragment _  on Post {
                                         id
                                         points
                                         voteStatus
@@ -229,7 +198,15 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                             );
 
                             if (data) {
+                                /**
+                                 * User wants to remove their 
+                                 * vote from the post.
+                                 */
                                 if (data.voteStatus === value) {
+                                    const currentPoints = +data.points;
+
+                                    const newPoints = data.voteStatus === 1 ? currentPoints - 1 : currentPoints + 1
+                                    
                                     return cache.writeFragment(
                                         gql`
                                             fragment __ on Post {
@@ -239,20 +216,23 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                                         `,
                                         {
                                             id: postId,
-                                            points: 0,
+                                            points: newPoints,
                                             voteStatus: null,
                                             __typename: POST_TYPENAME
                                         } as Data
                                     );
                                 }
 
+                                /**
+                                 * the user wants to downvote a post they upvoted
+                                 */
                                 const newPoints =
                                     +data.points +
                                     (!data.voteStatus ? 1 : 2) * value;
 
                                 cache.writeFragment(
                                     gql`
-                                        fragment _ on Post {
+                                        fragment ___ on Post {
                                             points
                                             voteStatus
                                         }
@@ -271,24 +251,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                          * Updates the post list when user creates a new post
                          */
                         createPost: (_, __, cache, ___) => {
-                            const POSTS = "posts";
-                            const QUERY = "Query";
-
-                            const allFields = cache.inspectFields("Query");
-                            const fieldInfos = allFields.filter(
-                                (info) => info.fieldName === POSTS
-                            );
-
-                            /**
-                             * We need to invalidate all the queries
-                             */
-                            fieldInfos.forEach((field) => {
-                                cache.invalidate(
-                                    QUERY,
-                                    POSTS,
-                                    field.arguments || {}
-                                );
-                            });
+                            invalidateAllPosts(cache);
                         },
 
                         logout: (result, _, cache, __) => {
@@ -316,6 +279,12 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                                     }
                                 }
                             );
+
+                            /**
+                             * Invalidate all the posts so the cache refreshes
+                             * and thus the user will be able to see his upvotes.
+                             */
+                            invalidateAllPosts(cache);
                         },
 
                         register: (result, _, cache, __) => {
